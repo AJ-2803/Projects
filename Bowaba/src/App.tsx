@@ -1,14 +1,28 @@
 import { FormEvent, useEffect, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
+type ClientRecord = {
+  client_id: string;
+  bm_id: string | null;
+  bm_name: string | null;
+  waba_id: string | null;
+  phone_number: string | null;
+  current_credit_balance: number | string | null;
+  current_automation_triggers_quota_left: number | string | null;
+};
+
 export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [searchClientId, setSearchClientId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [clientRecord, setClientRecord] = useState<ClientRecord | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const clientsTable = import.meta.env.VITE_CLIENTS_TABLE || "client_accounts";
 
   useEffect(() => {
     if (!supabase) {
@@ -98,6 +112,35 @@ export default function App() {
     setIsSubmitting(false);
   };
 
+  const createTestAccount = async () => {
+    if (!supabase) {
+      setError("Supabase is not configured. Add env values and restart dev server.");
+      return;
+    }
+
+    if (!email || !password) {
+      setError("Enter both email and password to create a test account.");
+      return;
+    }
+
+    setMessage("");
+    setError("");
+    setIsSubmitting(true);
+
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password
+    });
+
+    if (signUpError) {
+      setError(signUpError.message);
+    } else {
+      setMessage("Test account created. You can now login with these credentials.");
+    }
+
+    setIsSubmitting(false);
+  };
+
   const logout = async () => {
     if (!supabase) {
       return;
@@ -110,7 +153,46 @@ export default function App() {
       setMessage("You are logged out.");
       setEmail("");
       setPassword("");
+      setSearchClientId("");
+      setClientRecord(null);
     }
+  };
+
+  const searchClientById = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!supabase) {
+      setError("Supabase is not configured. Add env values and restart dev server.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(searchClientId.trim())) {
+      setError("Client ID must be exactly 6 digits.");
+      return;
+    }
+
+    setMessage("");
+    setError("");
+    setClientRecord(null);
+    setIsSearching(true);
+
+    const { data, error: queryError } = await supabase
+      .from(clientsTable)
+      .select(
+        "client_id,bm_id,bm_name,waba_id,phone_number,current_credit_balance,current_automation_triggers_quota_left"
+      )
+      .eq("client_id", searchClientId.trim())
+      .maybeSingle();
+
+    if (queryError) {
+      setError(queryError.message);
+    } else if (!data) {
+      setMessage(`No record found for Client ID ${searchClientId.trim()}.`);
+    } else {
+      setClientRecord(data as ClientRecord);
+    }
+
+    setIsSearching(false);
   };
 
   if (isCheckingSession) {
@@ -136,14 +218,73 @@ export default function App() {
         )}
 
         {userEmail ? (
-          <div className="logged-in">
-            <p className="success">Logged in as {userEmail}</p>
-            <button type="button" onClick={logout}>
-              Logout
-            </button>
-          </div>
+          <>
+            <div className="logged-in-header">
+              <p className="success">Logged in as {userEmail}</p>
+              <button type="button" className="secondary logout-btn" onClick={logout}>
+                Logout
+              </button>
+            </div>
+            <section className="dashboard">
+              <h2>Dashboard</h2>
+              <form className="dashboard-form" onSubmit={searchClientById}>
+                <label htmlFor="client-id">Search by Client ID</label>
+                <input
+                  id="client-id"
+                  type="text"
+                  value={searchClientId}
+                  onChange={(event) =>
+                    setSearchClientId(event.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  placeholder="Enter 6 digit Client ID"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  required
+                />
+                <button type="submit" disabled={isSearching}>
+                  {isSearching ? "Searching..." : "Search client"}
+                </button>
+              </form>
+
+              {clientRecord && (
+                <div className="result-card">
+                  <h3>Client Details</h3>
+                  <dl className="result-grid">
+                    <div>
+                      <dt>Client ID</dt>
+                      <dd>{clientRecord.client_id}</dd>
+                    </div>
+                    <div>
+                      <dt>BM ID</dt>
+                      <dd>{clientRecord.bm_id || "-"}</dd>
+                    </div>
+                    <div>
+                      <dt>BM Name</dt>
+                      <dd>{clientRecord.bm_name || "-"}</dd>
+                    </div>
+                    <div>
+                      <dt>WABA ID</dt>
+                      <dd>{clientRecord.waba_id || "-"}</dd>
+                    </div>
+                    <div>
+                      <dt>Phone Number</dt>
+                      <dd>{clientRecord.phone_number || "-"}</dd>
+                    </div>
+                    <div>
+                      <dt>Current Credit Balance</dt>
+                      <dd>{clientRecord.current_credit_balance ?? "-"}</dd>
+                    </div>
+                    <div>
+                      <dt>Current Automation Triggers Quota Left</dt>
+                      <dd>{clientRecord.current_automation_triggers_quota_left ?? "-"}</dd>
+                    </div>
+                  </dl>
+                </div>
+              )}
+            </section>
+          </>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form className="login-form" onSubmit={handleSubmit}>
             <label htmlFor="email">Email</label>
             <input
               id="email"
@@ -176,6 +317,14 @@ export default function App() {
 
             <button type="submit" disabled={isSubmitting || !isSupabaseConfigured}>
               {isSubmitting ? "Please wait..." : "Login"}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={createTestAccount}
+              disabled={isSubmitting || !isSupabaseConfigured}
+            >
+              Create test account
             </button>
           </form>
         )}

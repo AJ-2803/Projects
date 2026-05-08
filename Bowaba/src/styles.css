@@ -36,12 +36,14 @@ body {
   letter-spacing: -0.02em;
 }
 
-form {
+.login-form,
+.dashboard-form {
   display: grid;
   gap: 12px;
 }
 
-label {
+.login-form label,
+.dashboard-form label {
   margin-top: 8px;
   font-size: 1.35rem;
   font-weight: 600;
@@ -97,6 +99,17 @@ button:hover {
   background: #1d9a52;
 }
 
+.secondary {
+  margin-top: 4px;
+  background: #e5e7eb;
+  color: #111827;
+  box-shadow: none;
+}
+
+.secondary:hover {
+  background: #d1d5db;
+}
+
 button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
@@ -124,17 +137,85 @@ button:disabled {
   gap: 0.8rem;
 }
 
+.logged-in-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.logout-btn {
+  margin-top: 0;
+}
+
+.dashboard {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.dashboard h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.4rem;
+}
+
+.result-card {
+  margin-top: 1rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.result-card h3 {
+  margin: 0 0 0.8rem;
+  font-size: 1.1rem;
+}
+
+.result-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.result-grid div {
+  margin: 0;
+}
+
+.result-grid dt {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.result-grid dd {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+  color: #111827;
+  word-break: break-word;
+}
+
 @media (max-width: 768px) {
   .login-card {
     padding: 30px 22px;
   }
 
-  label {
+  .login-form label,
+  .dashboard-form label {
     font-size: 1.1rem;
   }
 
   button {
     font-size: 1.1rem;
+  }
+
+  .logged-in-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .result-grid {
+    grid-template-columns: 1fr;
   }
 
   .page {
