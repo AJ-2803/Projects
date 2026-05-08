@@ -69,10 +69,15 @@ input::placeholder {
 
 .forgot {
   color: #111827;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
   font-size: 1rem;
   font-weight: 600;
   justify-self: end;
   margin-top: 6px;
+  text-decoration: underline;
 }
 
 button {
@@ -92,10 +97,31 @@ button:hover {
   background: #1d9a52;
 }
 
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .success {
   margin: 12px 0 0;
   color: #047857;
   font-size: 0.95rem;
+}
+
+.error {
+  margin: 12px 0 0;
+  color: #b91c1c;
+  font-size: 0.95rem;
+}
+
+.status {
+  margin: 0;
+  color: #374151;
+}
+
+.logged-in {
+  display: grid;
+  gap: 0.8rem;
 }
 
 @media (max-width: 768px) {
