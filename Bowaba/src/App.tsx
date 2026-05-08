@@ -11,6 +11,50 @@ type ClientRecord = {
   current_automation_triggers_quota_left: number | string | null;
 };
 
+const getFriendlyAuthError = (rawMessage: string) => {
+  const message = rawMessage.toLowerCase();
+
+  if (message.includes("invalid login credentials")) {
+    return "Invalid email or password. Please check your credentials and try again.";
+  }
+
+  if (message.includes("email not confirmed")) {
+    return "Please confirm your email first, then try logging in again.";
+  }
+
+  if (message.includes("too many requests")) {
+    return "Too many attempts right now. Please wait a moment and retry.";
+  }
+
+  if (message.includes("signup is disabled")) {
+    return "Account creation is currently disabled for this project.";
+  }
+
+  if (message.includes("user already registered")) {
+    return "This email is already registered. Please login instead.";
+  }
+
+  return rawMessage;
+};
+
+const getFriendlySearchError = (rawMessage: string) => {
+  const message = rawMessage.toLowerCase();
+
+  if (message.includes("permission denied")) {
+    return "You do not have access to this client record. Please contact an admin.";
+  }
+
+  if (message.includes("relation") && message.includes("does not exist")) {
+    return "Client table not found. Check VITE_CLIENTS_TABLE and Supabase schema.";
+  }
+
+  if (message.includes("failed to fetch")) {
+    return "Unable to reach Supabase right now. Please check your network and try again.";
+  }
+
+  return rawMessage;
+};
+
 export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +78,7 @@ export default function App() {
     const bootstrap = async () => {
       const { data, error: sessionError } = await client.auth.getSession();
       if (sessionError) {
-        setError(sessionError.message);
+        setError(getFriendlyAuthError(sessionError.message));
       } else {
         setUserEmail(data.session?.user.email ?? null);
       }
@@ -75,7 +119,7 @@ export default function App() {
     });
 
     if (signInError) {
-      setError(signInError.message);
+      setError(getFriendlyAuthError(signInError.message));
     } else {
       setMessage("Login successful.");
       setPassword("");
@@ -104,7 +148,7 @@ export default function App() {
     });
 
     if (resetError) {
-      setError(resetError.message);
+      setError(getFriendlyAuthError(resetError.message));
     } else {
       setMessage("Password reset email sent. Check your inbox.");
     }
@@ -133,7 +177,7 @@ export default function App() {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      setError(getFriendlyAuthError(signUpError.message));
     } else {
       setMessage("Test account created. You can now login with these credentials.");
     }
@@ -148,7 +192,7 @@ export default function App() {
 
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
-      setError(signOutError.message);
+      setError(getFriendlyAuthError(signOutError.message));
     } else {
       setMessage("You are logged out.");
       setEmail("");
@@ -185,7 +229,7 @@ export default function App() {
       .maybeSingle();
 
     if (queryError) {
-      setError(queryError.message);
+      setError(getFriendlySearchError(queryError.message));
     } else if (!data) {
       setMessage(`No record found for Client ID ${searchClientId.trim()}.`);
     } else {
