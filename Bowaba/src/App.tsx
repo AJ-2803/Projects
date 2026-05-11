@@ -1,14 +1,18 @@
 import { FormEvent, useEffect, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
+type WabaEntry = {
+  waba_id: string | null;
+  phone_number: string | null;
+};
+
 type ClientRecord = {
   client_id: string;
   bm_id: string | null;
   bm_name: string | null;
-  waba_id: string | null;
-  phone_number: string | null;
   current_credit_balance: number | string | null;
   current_automation_triggers_quota_left: number | string | null;
+  client_wabas: WabaEntry[];
 };
 
 const getFriendlyAuthError = (rawMessage: string) => {
@@ -223,7 +227,7 @@ export default function App() {
     const { data, error: queryError } = await supabase
       .from(clientsTable)
       .select(
-        "client_id,bm_id,bm_name,waba_id,phone_number,current_credit_balance,current_automation_triggers_quota_left"
+        "client_id,bm_id,bm_name,current_credit_balance,current_automation_triggers_quota_left,client_wabas(waba_id,phone_number)"
       )
       .eq("client_id", searchClientId.trim())
       .maybeSingle();
@@ -307,22 +311,40 @@ export default function App() {
                       <dd>{clientRecord.bm_name || "-"}</dd>
                     </div>
                     <div>
-                      <dt>WABA ID</dt>
-                      <dd>{clientRecord.waba_id || "-"}</dd>
-                    </div>
-                    <div>
-                      <dt>Phone Number</dt>
-                      <dd>{clientRecord.phone_number || "-"}</dd>
-                    </div>
-                    <div>
                       <dt>Current Credit Balance</dt>
                       <dd>{clientRecord.current_credit_balance ?? "-"}</dd>
                     </div>
                     <div>
-                      <dt>Current Automation Triggers Quota Left</dt>
+                      <dt>Automation Triggers Quota Left</dt>
                       <dd>{clientRecord.current_automation_triggers_quota_left ?? "-"}</dd>
                     </div>
                   </dl>
+
+                  {clientRecord.client_wabas.length > 0 ? (
+                    <div className="waba-section">
+                      <h4>WABA Accounts</h4>
+                      <table className="waba-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>WABA ID</th>
+                            <th>Phone Number</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {clientRecord.client_wabas.map((entry, index) => (
+                            <tr key={index}>
+                              <td>{index + 1}</td>
+                              <td>{entry.waba_id || "-"}</td>
+                              <td>{entry.phone_number || "-"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="waba-empty">No WABA accounts linked to this client.</p>
+                  )}
                 </div>
               )}
             </section>
